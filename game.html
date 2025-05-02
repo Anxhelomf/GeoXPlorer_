@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoXplorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+    
+    <div class="map-container" style="display: none;">
+        <div id="map" class="map"></div>
+        <div class="timer" id="timer">1:00</div>
+        <button id="guessbtn">GUESS</button>
+        <iframe id="streetview" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="overlay" id="iframeOverlay"></div>
+    </div>
+
+    <div id="distanceContainer" style="display: none;">
+        <p>Your Guess was <span id="distanceKM2"></span> KM from the correct location!</p>
+    </div>
+
+    <div class="singleplayer">
+        <div class="btn" id="singlebtn" onclick=" window.location.href = 'round.html';"><a href="#">Single Player</a></div>
+    </div>
+
+    <div class="singleplayer">
+        <div class="btn" id="multibtn"><a href="#">Multi Player</a></div>
+    </div>
+
+    
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+       

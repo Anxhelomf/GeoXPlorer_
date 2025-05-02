@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Code Block Example</title>
+<style>
+  .code-block {
+    background-color: #f0f0f0; /* Background color */
+    border-radius: 5px; /* Rounded corners for the block */
+    font-family: 'Courier New', Courier, monospace; /* Monospaced font */
+    white-space: pre-wrap; /* Preserve formatting */
+    overflow-x: auto; /* Allow horizontal scrolling if needed */
+    display: inline-block; /* Make div size fit content */
+  }
+
+  .code-block pre {
+    margin: 0; /* Remove default margins */
+  }
+
+  .code-block code {
+    font-family: 'Courier New', Courier, monospace; /* Monospaced font */
+    white-space: pre; /* Preserve whitespace */
+  }
+</style>
+</head>
+<body>
+
+<div id="codeBlock" class="code-block">
+    <!-- This will be replaced by JavaScript -->
+</div>
+
+<script>
+  // Content you want to display as code
+  var codeContent = `km`;
+
+  // Get the div element
+  var codeBlock = document.getElementById('codeBlock');
+
+  // Set the innerHTML of the div to the code content
+  codeBlock.innerHTML = '<pre><code>' + codeContent + '</code></pre>';
+</script>
+
+</body>
+</html>

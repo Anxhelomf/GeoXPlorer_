@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoGuessr - Start Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+     .loading-text {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        margin-top: 20px;
+        display: none; /* hide by default */
+      }
+    </style>
+</head>
+<body>
+    <h1 id="welcome">Welcome to GeoXplorer!</h1>
+    <p></p>
+    <form id="start-form">
+        <button id="play-button" class="shadow_btn">Play Now!</button>
+    </form>
+    <div class="spinner">
+        <div class="spinner1"></div>
+    </div>
+    <div class="loading-text">Loading...</div>
+    <script>
+        document.getElementById('start-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // prevent the default behavior of the event
+            var spinner = document.querySelector(".spinner");
+            var welcomeMessage = document.querySelector("#welcome");
+            var shadowbtn = document.querySelector(".shadow_btn");
+            var loadingText = document.querySelector(".loading-text");
+            welcomeMessage.style.display = "none";
+            shadowbtn.style.display = "none";
+            spinner.style.display = "flex";
+            loadingText.style.display = "block"; /* show loading text */
+
+            setTimeout(function(){
+                window.location.href = 'game.html';
+            }, 2500);
+        });
+    </script>
+</body>
+</html>

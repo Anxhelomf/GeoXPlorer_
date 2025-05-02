@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoXplorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Karten-Container, der zu Beginn ausgeblendet ist -->
+    <div class="map-container" style="display: none;">
+        <div id="map" class="map"></div>
+        <div class="timer" id="timer">1:00</div>
+        <button id="guessbtn">GUESS</button>
+        <iframe id="streetview" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="overlay" id="iframeOverlay"></div>
+    </div>
+
+    <!-- Container, der die Distanz anzeigt -->
+    <div id="distanceContainer" style="display: none;">
+        <p>Your Guess was <span id="distanceKM2"></span> KM from the correct location!</p>
+    </div>
+
+    <button id="btn12" style="display: none;" onclick="location.reload()">Next Round!</button>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map, marker, timerInterval;
+        var randomLocation;
+
+        var locations = [
+            // Liste der zufälligen Standorte mit Google Street View Links und Koordinaten
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718820771880!6m8!1m7!1sCAoSK0FGMVFpcE4wSzhLejMzSHhncjJsS2hTT1NMY0ZtR1Jjc2F4TS1pSmt4SE0.!2m2!1d54.1114066!2d-10.2344925!3f122.92120137504911!4f-16.711626954038692!5f0.400635285518016",
+                coords: [54.1114066, -10.2344925]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718820883049!6m8!1m7!1ssa4qS0ZYl3ZqvzYR4GmYhQ!2m2!1d32.47261072704146!2d-84.99736228205889!3f262.50871196630123!4f3.061821833573987!5f0.7820865974627469",
+                coords: [32.4726107, -84.9973623]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827303935!6m8!1m7!1sOEavY9MPSDzjnVcYtpbMXQ!2m2!1d-37.82461664383646!2d144.946614143817!3f16.10315443451468!4f-1.4917511281996383!5f0.7820865974627469",
+                coords: [-37.8246166, 144.9466141]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827432245!6m8!1m7!1sCAoSLEFGMVFpcE91Vmo4T0VFcnBGUXNvZWMxc0pNNFc0bzFWTnNMQzFXbGFhZUd1!2m2!1d-4.271874085148421!2d15.28885220698706!3f342.0836458806304!4f-6.555080819248005!5f0.7820865974627469",
+                coords: [-4.2718741, 15.2888522]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827462238!6m8!1m7!1spcJaV_pNrRjGmkevh4z7_Q!2m2!1d48.30703563936989!2d14.28712349943422!3f232.81494!4f0!5f0.7820865974627469",
+                coords: [48.30703563936989, 14.28712349943422]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827514228!6m8!1m7!1sDjJo87cgO8GnrstNZOXU7g!2m2!1d45.732451163891!2d-107.6011260343888!3f341.9225!4f0!5f0.7820865974627469",
+                coords: [45.732451163891, -107.6011260343888]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827531077!6m8!1m7!1sCAoSLEFGMVFpcE1JT1k4ZTdhZkMxYlZzUDlDS0xtejVOdHVNRmJyQjNuNWo0NHdJ!2m2!1d38.0799472!2d91.00743059999999!3f200!4f20!5f0.7820865974627469",
+                coords: [38.0799472, 91.00743059999999]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827548828!6m8!1m7!1sFpeVh1FQtGow-lOSVgLM3A!2m2!1d55.79373128982514!2d49.12172933277985!3f13.909035!4f0!5f0.7820865974627469",
+                coords: [55.79373128982514, 49.12172933277985]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827567592!6m8!1m7!1soOIHR1u99fkDTI_JG_d28g!2m2!1d58.69634576853638!2d81.49879394026097!3f76.972565!4f0!5f0.7820865974627469",
+                coords: [58.69634576853638, 81.49879394026097]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827584837!6m8!1m7!1s5qQyjcQ9t8hrKoVAQ6fntA!2m2!1d50.84641841293912!2d5.69912234629381!3f87.83624!4f0!5f0.7820865974627469",
+                coords: [50.84641841293912, 5.69912234629381]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827604129!6m8!1m7!1sQHW7w5JaRrgu3tgK2tNALg!2m2!1d22.09023361558485!2d82.1499866620675!3f287.4203!4f0!5f0.7820865974627469",
+                coords: [22.09023361558485, 82.1499866620675]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827620767!6m8!1m7!1sqGbFrqi_k36v1Y0sW3NfvQ!2m2!1d62.7813158126903!2d148.1528914165683!3f311.83878!4f0!5f0.7820865974627469",
+                coords: [62.7813158126903, 148.1528914165683]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827639120!6m8!1m7!1sUn8ddLzyE4an3NwUUACxfA!2m2!1d60.94072779017862!2d-149.1730400931138!3f309.48083!4f0!5f0.7820865974627469",
+                coords: [60.94072779017862, -149.1730400931138]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827672720!6m8!1m7!1s1NjYFU6VzrGGWAu-LiAJKw!2m2!1d48.85925455437295!2d2.293834351543195!3f133.9822518430746!4f0!5f0.7820865974627469",
+                coords: [48.85925455437295, 2.293834351543195]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827700151!6m8!1m7!1sb_nRGTpqpuN1c5RFLfBc4A!2m2!1d50.8507089910383!2d4.339176410614295!3f81.26100712847548!4f0!5f0.7820865974627469",
+                coords: [50.8507089910383, 4.339176410614295]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827737011!6m8!1m7!1sThrnxeH1DjIuRtlPl4zE-Q!2m2!1d50.73581402213576!2d7.106180748381432!3f298.47406!4f0!5f0.7820865974627469",
+                coords: [50.73581402213576, 7.106180748381432]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827771226!6m8!1m7!1szg--VF_qqW8UoOdUVptnqQ!2m2!1d52.82590907479383!2d13.65253031495722!3f60.38031813305285!4f-5.705452338807717!5f0.7820865974627469",
+                coords: [52.82590907479383, 13.65253031495722]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827790470!6m8!1m7!1sCAoSLEFGMVFpcE8zT254VWVNZ3NZOWZnTWFyNmdHdGNIaDdnUVhPd0trcGdpQkVw!2m2!1d47.315942!2d72.48450439999999!3f28.263666!4f1.1254040000000032!5f0.7820865974627469",
+                coords: [47.315942, 72.48450439999999]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827805306!6m8!1m7!1sz2H0J0tjitngTo2KMkdSCw!2m2!1d52.97651927895173!2d108.2965682340133!3f144.31268!4f0!5f0.7820865974627469",
+                coords: [52.97651927895173, 108.2965682340133]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827826242!6m8!1m7!1se5s8OgjIEbzEkUI1KiUTQw!2m2!1d19.69449014608697!2d-155.0682271705252!3f95.2746!4f0!5f0.7820865974627469",
+                coords: [19.69449014608697, -155.0682271705252]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827854419!6m8!1m7!1sCAoSLEFGMVFpcE9mdl9fblQxVm5MRnN6dXVxMnVOWmFEZlhTUmJFLTFsSnh5V2hZ!2m2!1d39.1878783!2d127.481945!3f273.50430194644764!4f14.897605292681618!5f0.7820865974627469",
+                coords: [39.1878783, 127.481945]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827875473!6m8!1m7!1su9UmrEn6iXIAAAQfDk48SA!2m2!1d47.63343343531298!2d118.6152692222412!3f234.03452100464443!4f6.502963748159047!5f0.7820865974627469",
+                coords: [47.63343343531298, 118.6152692222412]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827896691!6m8!1m7!1sX-zUXRcws8PAK0xErmt2_Q!2m2!1d56.83488986340083!2d60.59531788884939!3f83.11178!4f0!5f0.7820865974627469",
+                coords: [56.83488986340083, 60.59531788884939]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827918693!6m8!1m7!1sq-jGo-gwJo2zga1Ll9-HAg!2m2!1d50.73742073092028!2d7.105611467313468!3f27.14419662170635!4f-13.549058230863821!5f0.7820865974627469",
+                coords: [50.73742073092028, 7.105611467313468]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827948628!6m8!1m7!1sThwsAOKCLAyaQddrPjI6PQ!2m2!1d50.62062219519508!2d6.85533173981553!3f331.5951740956927!4f0!5f0.7820865974627469",
+                coords: [50.62062219519508, 6.85533173981553]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718827981079!6m8!1m7!1s8-RszKlHOKsZqhdPnpdfWA!2m2!1d50.66528235553614!2d6.789707042805036!3f84.12818773389886!4f-10.806353119476611!5f0.7820865974627469",
+                coords: [50.66528235553614, 6.789707042805036]
+            },
+            {
+                link: "https://www.google.com/maps/embed?pb=!4v1718828118731!6m8!1m7!1sktohCykWnnXZIdmX-6WdnA!2m2!1d50.64810970767809!2d6.830224163050074!3f162.2823078367827!4f0!5f0.7820865974627469",
+                coords: [50.64810970767809, 6.830224163050074]
+            }
+        ];
+
+
+        // Funktion, um einen zufälligen Standort aus der Liste zu erhalten
+        function getRandomLocation() {
+            return locations[Math.floor(Math.random() * locations.length)];
+        }
+
+        // Funktion zur Initialisierung der Karte
+        function initializeMap() {
+            map = L.map('map', {
+                minZoom: 1,
+                maxZoom: 17
+            }).setView([0, 0], 2);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }).addTo(map);
+
+            // Klick-Event auf der Karte, um einen Marker zu setzen
+            map.on('click', function(e) {
+                var coord = e.latlng;
+                var lat = coord.lat;
+                var lng = coord.lng;
+
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+
+                marker = L.marker([lat, lng]).addTo(map);
+
+                console.log("Coordinates: " + lat + ", " + lng);
+            });
+        }
+
+        // Funktion zur Starten des Timers
+        function startTimer(duration, display) {
+            var timer = duration, minutes, seconds;
+            timerInterval = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+                display.textContent = minutes + ":" + seconds;
+                if (timer < 15) {
+                    var timerDisplay = document.getElementById('timer');
+                        timerDisplay.style.display = 'block';
+                        //document.getElementById('timer').style.display = 'block';
+                };
+                if (--timer < 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        const guessbtn = document.getElementById("guessbtn");
+        guessbtn.addEventListener("click", function() {
+            clearInterval(timerInterval);
+            endGame();
+            map.off('click'); 
+        });
+
+        var gameEnded = false;
+
+        // Funktion zur Beendigung des Spiels
+        async function endGame() {
+            gameEnded = true;
+
+            const mapElement = document.getElementById('map');
+            if (mapElement._mouseoverListener && mapElement._mouseoutListener) {
+                mapElement.removeEventListener('mouseover', mapElement._mouseoverListener);
+                mapElement.removeEventListener('mouseout', mapElement._mouseoutListener);
+            }
+
+            var button = document.getElementById("btn12");
+            var button2 = document.getElementById("guessbtn");
+            button.style.display = "block";
+            button2.style.display = "none";
+            var streetViewIframe = document.getElementById('streetview');
+            streetViewIframe.style.display = 'none';
+
+            var mapContainer = document.querySelector('.map-container');
+            mapContainer.style.position = 'absolute';
+            mapContainer.style.top = '10px';
+            mapContainer.style.left = '0';
+            mapContainer.style.width = '100vw';
+            mapContainer.style.height = '82vh';
+            mapContainer.style.margin = '0';
+
+            mapElement.style.width = '100%';
+            mapElement.style.height = '100%';
+
+            map.invalidateSize();
+
+            var correctLatLng = L.latLng(randomLocation.coords[0], randomLocation.coords[1]);
+            map.setView(correctLatLng, 18);
+
+            var flagIcon = L.icon({
+                iconUrl: 'flag.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+
+            L.marker(correctLatLng, { icon: flagIcon }).addTo(map);
+
+            var distanceKM2 = document.getElementById('distanceKM2');
+
+            if (marker) {
+                var markerLatLng = marker.getLatLng();
+                var polyline = L.polyline([markerLatLng, correctLatLng], { color: 'red' }).addTo(map);
+
+                polyline.bringToFront();
+                polyline.setLatLngs([markerLatLng, correctLatLng]);
+
+                var distance = markerLatLng.distanceTo(correctLatLng);
+                var distanceKM = distance / 1000;
+                var distanceWithCommas = distanceKM.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+                var distanceWithoutCommas = distanceKM.toLocaleString('en-US', { maximumFractionDigits: 0 }).replace(/,/g, '');
+                console.log(distanceKM);
+
+                if (distanceKM < 10) {
+                    distanceKM2.innerHTML = `Your Guess was <span style="display: inline-block;"><pre><code class="code-block">${distanceWithCommas}KM</code></pre></span> from the correct Location!`;
+                } else {
+                    distanceKM2.innerHTML = `Your Guess was <span style="display: inline-block;"><pre><code class="code-block">${distanceWithoutCommas}KM</code></pre></span> from the correct Location!`;
+                }
+
+                var bounds = L.latLngBounds(markerLatLng, correctLatLng);
+
+                var zoomLevel = 10;
+                var duration = 6;
+                if (distance < 1000) { 
+                    zoomLevel = 14;
+                    duration = 4;
+                } else if (distance < 5000) { 
+                    zoomLevel = 12;
+                    duration = 5;
+                }
+
+                map.flyToBounds(bounds, {
+                    duration: duration,
+                    easeLinearity: 0.5,
+                    maxZoom: zoomLevel,
+                });
+            } else {
+                map.flyTo(correctLatLng, 16, {
+                    duration: 1.5,
+                    easeLinearity: 0.5
+                });
+
+                distanceKM2.innerHTML = "You ran out of time!";
+            }
+
+            var distanceContainer = document.getElementById('distanceContainer');
+            distanceContainer.style.display = 'block';
+
+            var timerDisplay = document.getElementById('timer');
+            timerDisplay.style.display = 'none';
+
+            try {
+                // let response = await fetch(https://nominatim.openstreetmap.org/reverse?format=json&lat=${randomLocation.coords[0]}&lon=${randomLocation.coords[1]});
+                // let data = await response.json();
+                // console.log('Address:', data.display_name);
+            } catch (error) {
+                console.error('Could not load address information.', error);
+            }
+        }
+
+        // Funktion zum Starten des Spiels
+        function startGame() {
+            randomLocation = getRandomLocation();
+            document.getElementById('streetview').src = randomLocation.link;
+            document.getElementById('guessbtn').style.display = 'block';
+            document.querySelector('.map-container').style.display = 'block';
+            document.querySelector('.map').style.display = 'block';
+
+            if (!map) {
+                initializeMap();
+            }
+
+            startTimer(90   , document.getElementById('timer'));
+
+            const mapElement = document.getElementById('map');
+            const mouseoverListener = () => {
+                mapElement.style.width = '550px';
+                mapElement.style.height = '550px';
+                map.invalidateSize();
+            };
+            const mouseoutListener = () => {
+                mapElement.style.width = '200px';
+                mapElement.style.height = '200px';
+                map.invalidateSize();
+            };
+
+            mapElement.addEventListener('mouseover', mouseoverListener);
+            mapElement.addEventListener('mouseout', mouseoutListener);
+
+            mapElement._mouseoverListener = mouseoverListener;
+            mapElement._mouseoutListener = mouseoutListener;
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
